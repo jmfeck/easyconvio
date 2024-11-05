@@ -1,5 +1,4 @@
 from PIL import Image
-import pyheif
 
 def convert_jpg_to_png(input_path, output_path=None):
     output_path = output_path or input_path.replace(".jpg", ".png")
