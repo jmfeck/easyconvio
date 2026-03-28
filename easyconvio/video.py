@@ -1,4 +1,4 @@
-from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, afx
+from moviepy import VideoFileClip, AudioFileClip, concatenate_videoclips, vfx, afx
 
 from .base import BaseFile
 
@@ -126,7 +126,6 @@ class VideoFile(BaseFile):
         return self
 
     def add_audio(self, audio_path):
-        from moviepy.editor import AudioFileClip
         audio = AudioFileClip(audio_path)
         self._clip = self._clip.set_audio(audio)
         return self
