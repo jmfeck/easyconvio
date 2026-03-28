@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "easyconvio"
 version = "0.2.1"
-description = "A universal file conversion library for Python with a fluent API"
+description = "Simple file conversion and transformation for Python"
 readme = "README.md"
 authors = [{ name = "Joao Feck", email = "joaomfeck@gmail.com" }]
 requires-python = ">=3.8"

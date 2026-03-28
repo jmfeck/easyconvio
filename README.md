@@ -1,6 +1,8 @@
 # easyconvio
 
-A universal file conversion and manipulation library for Python with a fluent API.
+Simple file conversion and transformation for Python. Read a file, transform it, export to another format. That's it.
+
+No complex pipelines, no bloated abstractions — just a clean, fluent API to convert and manipulate files across images, audio, video, documents, and more.
 
 ## Installation
 
