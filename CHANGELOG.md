@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 (2026-03-28)
+
+- Type hints on all public methods
+- Docstrings on all public methods
+- Lazy imports — `import easyconvio` no longer loads all dependencies eagerly
+- Context manager support (`with ec.read_mp4("x") as video:`)
+- `py.typed` marker (PEP 561)
+- Clear error messages for missing external tools (ffmpeg, LibreOffice, Inkscape) and optional packages
+- 134 tests covering all modules
+- CI/CD with GitHub Actions (tests on Ubuntu + Windows, auto-publish on release)
+- Target Python 3.13+
+- Full moviepy 2.x compatibility (PascalCase effects API)
+
 ## 0.2.2 (2026-03-28)
 
 - Fix project URLs in package metadata
