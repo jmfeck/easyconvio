@@ -1,16 +1,33 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="convertio-py",
-    version="0.1.0",
-    description="A universal file conversion library for Python",
+    name="easyconvio",
+    version="0.2.0",
+    description="A universal file conversion library for Python with a fluent API",
     author="Joao Feck",
     author_email="joaomfeck@gmail.com",
-    description="A generic library for file conversion",
-
     packages=find_packages(),
     install_requires=[
-        "Pillow", "pydub", "pypandoc", "moviepy", "ebooklib"
-    ]
-    
+        "Pillow",
+        "pydub",
+        "pypandoc",
+        "moviepy",
+    ],
+    extras_require={
+        "presentations": ["python-pptx"],
+        "vectors": ["cairosvg"],
+        "fonts": ["fonttools", "brotli"],
+        "archives": ["py7zr", "rarfile"],
+        "cad": ["ezdxf", "matplotlib"],
+        "all": [
+            "python-pptx",
+            "cairosvg",
+            "fonttools",
+            "brotli",
+            "py7zr",
+            "rarfile",
+            "ezdxf",
+            "matplotlib",
+        ],
+    },
 )
