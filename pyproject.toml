@@ -8,17 +8,12 @@ version = "0.2.2"
 description = "Simple file conversion and transformation for Python"
 readme = "README.md"
 authors = [{ name = "Joao Feck", email = "joaomfeck@gmail.com" }]
-requires-python = ">=3.8"
+requires-python = ">=3.13"
 license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -28,7 +23,7 @@ dependencies = [
     "pydub",
     "pypandoc",
     "moviepy",
-    "audioop-lts; python_version >= '3.13'",
+    "audioop-lts",
 ]
 
 [project.urls]
