@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "easyconvio"
-version = "0.2.0"
+version = "0.2.1"
 description = "A universal file conversion library for Python with a fluent API"
 readme = "README.md"
 authors = [{ name = "Joao Feck", email = "joaomfeck@gmail.com" }]
@@ -32,9 +32,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/joaomfeck/easyconvio"
-Repository = "https://github.com/joaomfeck/easyconvio"
-Issues = "https://github.com/joaomfeck/easyconvio/issues"
+Homepage = "https://github.com/jmfeck/easyconvio"
+Repository = "https://github.com/jmfeck/easyconvio"
+Issues = "https://github.com/jmfeck/easyconvio/issues"
 
 [project.optional-dependencies]
 presentations = ["python-pptx"]
