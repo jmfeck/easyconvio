@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "easyconvio"
-version = "0.2.2"
+version = "0.3.0"
 description = "Simple file conversion and transformation for Python"
 readme = "README.md"
 authors = [{ name = "Joao Feck", email = "joaomfeck@gmail.com" }]
