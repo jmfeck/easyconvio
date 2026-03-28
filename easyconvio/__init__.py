@@ -1,294 +1,120 @@
-from .image import ImageFile
-from .audio import AudioFile
-from .video import VideoFile
-from .document import DocumentFile
-from .ebook import EbookFile
-from .archive import ArchiveFile
-from .presentation import PresentationFile
-from .vector import VectorFile
-from .font import FontFile
-from .cad import CADFile
-
-
-# ============================================================
-# Image readers
-# ============================================================
-
-def read_jpg(path):
-    return ImageFile(path)
-
-def read_jpeg(path):
-    return ImageFile(path)
-
-def read_png(path):
-    return ImageFile(path)
-
-def read_gif(path):
-    return ImageFile(path)
-
-def read_bmp(path):
-    return ImageFile(path)
-
-def read_tiff(path):
-    return ImageFile(path)
-
-def read_tif(path):
-    return ImageFile(path)
-
-def read_webp(path):
-    return ImageFile(path)
-
-def read_ico(path):
-    return ImageFile(path)
-
-def read_tga(path):
-    return ImageFile(path)
-
-def read_ppm(path):
-    return ImageFile(path)
-
-def read_pcx(path):
-    return ImageFile(path)
-
-def read_dds(path):
-    return ImageFile(path)
-
-def read_heic(path):
-    return ImageFile(path)
-
-def read_heif(path):
-    return ImageFile(path)
-
-
-# ============================================================
-# Audio readers
-# ============================================================
-
-def read_mp3(path):
-    return AudioFile(path)
-
-def read_wav(path):
-    return AudioFile(path)
-
-def read_ogg(path):
-    return AudioFile(path)
-
-def read_flac(path):
-    return AudioFile(path)
-
-def read_aac(path):
-    return AudioFile(path)
-
-def read_wma(path):
-    return AudioFile(path)
-
-def read_m4a(path):
-    return AudioFile(path)
-
-def read_aiff(path):
-    return AudioFile(path)
-
-def read_ac3(path):
-    return AudioFile(path)
-
-def read_opus(path):
-    return AudioFile(path)
-
-def read_amr(path):
-    return AudioFile(path)
-
-def read_au(path):
-    return AudioFile(path)
-
-
-# ============================================================
-# Video readers
-# ============================================================
-
-def read_mp4(path):
-    return VideoFile(path)
-
-def read_avi(path):
-    return VideoFile(path)
-
-def read_mov(path):
-    return VideoFile(path)
-
-def read_mkv(path):
-    return VideoFile(path)
-
-def read_webm(path):
-    return VideoFile(path)
-
-def read_flv(path):
-    return VideoFile(path)
-
-def read_ogv(path):
-    return VideoFile(path)
-
-def read_wmv(path):
-    return VideoFile(path)
-
-def read_3gp(path):
-    return VideoFile(path)
-
-def read_ts(path):
-    return VideoFile(path)
-
-def read_mpeg(path):
-    return VideoFile(path)
-
-def read_mpg(path):
-    return VideoFile(path)
-
-
-# ============================================================
-# Document readers
-# ============================================================
-
-def read_pdf(path):
-    return DocumentFile(path)
-
-def read_docx(path):
-    return DocumentFile(path)
-
-def read_doc(path):
-    return DocumentFile(path)
-
-def read_odt(path):
-    return DocumentFile(path)
-
-def read_rtf(path):
-    return DocumentFile(path)
-
-def read_txt(path):
-    return DocumentFile(path)
-
-def read_html(path):
-    return DocumentFile(path)
-
-def read_md(path):
-    return DocumentFile(path)
-
-def read_latex(path):
-    return DocumentFile(path)
-
-def read_csv(path):
-    return DocumentFile(path)
-
-
-# ============================================================
-# Ebook readers
-# ============================================================
-
-def read_epub(path):
-    return EbookFile(path)
-
-def read_mobi(path):
-    return EbookFile(path)
-
-def read_azw3(path):
-    return EbookFile(path)
-
-def read_fb2(path):
-    return EbookFile(path)
-
-def read_lrf(path):
-    return EbookFile(path)
-
-def read_pdb(path):
-    return EbookFile(path)
-
-def read_snb(path):
-    return EbookFile(path)
-
-
-# ============================================================
-# Archive readers
-# ============================================================
-
-def read_zip(path):
-    return ArchiveFile(path)
-
-def read_tar(path):
-    return ArchiveFile(path)
-
-def read_gz(path):
-    return ArchiveFile(path)
-
-def read_tgz(path):
-    return ArchiveFile(path)
-
-def read_bz2(path):
-    return ArchiveFile(path)
-
-def read_xz(path):
-    return ArchiveFile(path)
-
-def read_7z(path):
-    return ArchiveFile(path)
-
-def read_rar(path):
-    return ArchiveFile(path)
-
-
-# ============================================================
-# Presentation readers
-# ============================================================
-
-def read_pptx(path):
-    return PresentationFile(path)
-
-def read_ppt(path):
-    return PresentationFile(path)
-
-def read_odp(path):
-    return PresentationFile(path)
-
-
-# ============================================================
-# Vector readers
-# ============================================================
-
-def read_svg(path):
-    return VectorFile(path)
-
-def read_eps(path):
-    return VectorFile(path)
-
-def read_ai(path):
-    return VectorFile(path)
-
-def read_wmf(path):
-    return VectorFile(path)
-
-def read_emf(path):
-    return VectorFile(path)
-
-def read_cdr(path):
-    return VectorFile(path)
-
-
-# ============================================================
-# Font readers
-# ============================================================
-
-def read_ttf(path):
-    return FontFile(path)
-
-def read_otf(path):
-    return FontFile(path)
-
-def read_woff(path):
-    return FontFile(path)
-
-def read_woff2(path):
-    return FontFile(path)
-
-
-# ============================================================
-# CAD readers
-# ============================================================
-
-def read_dxf(path):
-    return CADFile(path)
+"""easyconvio - Simple file conversion and transformation for Python."""
+
+
+def __getattr__(name):
+    """Lazy-load reader functions only when accessed."""
+    _READERS = {
+        # Image
+        "read_jpg": ".image", "read_jpeg": ".image", "read_png": ".image",
+        "read_gif": ".image", "read_bmp": ".image", "read_tiff": ".image",
+        "read_tif": ".image", "read_webp": ".image", "read_ico": ".image",
+        "read_tga": ".image", "read_ppm": ".image", "read_pcx": ".image",
+        "read_dds": ".image", "read_heic": ".image", "read_heif": ".image",
+        # Audio
+        "read_mp3": ".audio", "read_wav": ".audio", "read_ogg": ".audio",
+        "read_flac": ".audio", "read_aac": ".audio", "read_wma": ".audio",
+        "read_m4a": ".audio", "read_aiff": ".audio", "read_ac3": ".audio",
+        "read_opus": ".audio", "read_amr": ".audio", "read_au": ".audio",
+        # Video
+        "read_mp4": ".video", "read_avi": ".video", "read_mov": ".video",
+        "read_mkv": ".video", "read_webm": ".video", "read_flv": ".video",
+        "read_ogv": ".video", "read_wmv": ".video", "read_3gp": ".video",
+        "read_ts": ".video", "read_mpeg": ".video", "read_mpg": ".video",
+        # Document
+        "read_pdf": ".document", "read_docx": ".document", "read_doc": ".document",
+        "read_odt": ".document", "read_rtf": ".document", "read_txt": ".document",
+        "read_html": ".document", "read_md": ".document", "read_latex": ".document",
+        "read_csv": ".document",
+        # Ebook
+        "read_epub": ".ebook", "read_mobi": ".ebook", "read_azw3": ".ebook",
+        "read_fb2": ".ebook", "read_lrf": ".ebook", "read_pdb": ".ebook",
+        "read_snb": ".ebook",
+        # Archive
+        "read_zip": ".archive", "read_tar": ".archive", "read_gz": ".archive",
+        "read_tgz": ".archive", "read_bz2": ".archive", "read_xz": ".archive",
+        "read_7z": ".archive", "read_rar": ".archive",
+        # Presentation
+        "read_pptx": ".presentation", "read_ppt": ".presentation",
+        "read_odp": ".presentation",
+        # Vector
+        "read_svg": ".vector", "read_eps": ".vector", "read_ai": ".vector",
+        "read_wmf": ".vector", "read_emf": ".vector", "read_cdr": ".vector",
+        # Font
+        "read_ttf": ".font", "read_otf": ".font", "read_woff": ".font",
+        "read_woff2": ".font",
+        # CAD
+        "read_dxf": ".cad",
+    }
+
+    _CLASSES = {
+        "ImageFile": ".image", "AudioFile": ".audio", "VideoFile": ".video",
+        "DocumentFile": ".document", "EbookFile": ".ebook",
+        "ArchiveFile": ".archive", "PresentationFile": ".presentation",
+        "VectorFile": ".vector", "FontFile": ".font", "CADFile": ".cad",
+    }
+
+    if name in _READERS:
+        module_path = _READERS[name]
+        import importlib
+        mod = importlib.import_module(module_path, __name__)
+        cls_name = mod.__all__[0] if hasattr(mod, "__all__") else None
+
+        # Map module to file class
+        _MOD_CLASS = {
+            ".image": "ImageFile", ".audio": "AudioFile", ".video": "VideoFile",
+            ".document": "DocumentFile", ".ebook": "EbookFile",
+            ".archive": "ArchiveFile", ".presentation": "PresentationFile",
+            ".vector": "VectorFile", ".font": "FontFile", ".cad": "CADFile",
+        }
+        cls = getattr(mod, _MOD_CLASS[module_path])
+
+        def reader(path, _cls=cls):
+            return _cls(path)
+
+        reader.__name__ = name
+        reader.__qualname__ = name
+        globals()[name] = reader
+        return reader
+
+    if name in _CLASSES:
+        import importlib
+        mod = importlib.import_module(_CLASSES[name], __name__)
+        cls = getattr(mod, name)
+        globals()[name] = cls
+        return cls
+
+    raise AttributeError(f"module 'easyconvio' has no attribute {name!r}")
+
+
+__all__ = [
+    # Classes
+    "ImageFile", "AudioFile", "VideoFile", "DocumentFile", "EbookFile",
+    "ArchiveFile", "PresentationFile", "VectorFile", "FontFile", "CADFile",
+    # Image readers
+    "read_jpg", "read_jpeg", "read_png", "read_gif", "read_bmp", "read_tiff",
+    "read_tif", "read_webp", "read_ico", "read_tga", "read_ppm", "read_pcx",
+    "read_dds", "read_heic", "read_heif",
+    # Audio readers
+    "read_mp3", "read_wav", "read_ogg", "read_flac", "read_aac", "read_wma",
+    "read_m4a", "read_aiff", "read_ac3", "read_opus", "read_amr", "read_au",
+    # Video readers
+    "read_mp4", "read_avi", "read_mov", "read_mkv", "read_webm", "read_flv",
+    "read_ogv", "read_wmv", "read_3gp", "read_ts", "read_mpeg", "read_mpg",
+    # Document readers
+    "read_pdf", "read_docx", "read_doc", "read_odt", "read_rtf", "read_txt",
+    "read_html", "read_md", "read_latex", "read_csv",
+    # Ebook readers
+    "read_epub", "read_mobi", "read_azw3", "read_fb2", "read_lrf", "read_pdb",
+    "read_snb",
+    # Archive readers
+    "read_zip", "read_tar", "read_gz", "read_tgz", "read_bz2", "read_xz",
+    "read_7z", "read_rar",
+    # Presentation readers
+    "read_pptx", "read_ppt", "read_odp",
+    # Vector readers
+    "read_svg", "read_eps", "read_ai", "read_wmf", "read_emf", "read_cdr",
+    # Font readers
+    "read_ttf", "read_otf", "read_woff", "read_woff2",
+    # CAD readers
+    "read_dxf",
+]

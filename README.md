@@ -1,5 +1,10 @@
 # easyconvio
 
+[![PyPI version](https://img.shields.io/pypi/v/easyconvio)](https://pypi.org/project/easyconvio/)
+[![Tests](https://github.com/jmfeck/easyconvio/actions/workflows/tests.yml/badge.svg)](https://github.com/jmfeck/easyconvio/actions/workflows/tests.yml)
+[![Python versions](https://img.shields.io/pypi/pyversions/easyconvio)](https://pypi.org/project/easyconvio/)
+[![License](https://img.shields.io/pypi/l/easyconvio)](https://github.com/jmfeck/easyconvio/blob/main/LICENSE)
+
 Simple file conversion and transformation for Python. Read a file, transform it, export to another format. That's it.
 
 No complex pipelines, no bloated abstractions — just a clean, fluent API to convert and manipulate files across images, audio, video, documents, and more.

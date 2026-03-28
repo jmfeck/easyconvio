@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import os
 import subprocess
 import shutil
+from typing import Optional, List
 
 from .base import BaseFile
 
 
-def _require_command(cmd, install_hint):
+def _require_command(cmd: str, install_hint: str) -> None:
     if shutil.which(cmd) is None:
         raise RuntimeError(f"'{cmd}' not found. {install_hint}")
 
@@ -13,33 +16,37 @@ def _require_command(cmd, install_hint):
 class PresentationFile(BaseFile):
     """Presentation file with manipulation and conversion methods."""
 
-    def _load(self):
+    def _load(self) -> None:
         try:
             from pptx import Presentation
             self._prs = Presentation(self.path)
         except ImportError:
             raise ImportError(
                 "PresentationFile requires python-pptx. "
-                "Install with: pip install python-pptx"
+                "Install with: pip install easyconvio[presentations]"
             )
 
     # --- Properties ---
 
     @property
-    def slide_count(self):
+    def slide_count(self) -> int:
+        """Number of slides."""
         return len(self._prs.slides)
 
     @property
-    def slide_width(self):
+    def slide_width(self) -> int:
+        """Slide width in EMU."""
         return self._prs.slide_width
 
     @property
-    def slide_height(self):
+    def slide_height(self) -> int:
+        """Slide height in EMU."""
         return self._prs.slide_height
 
     # --- Operations ---
 
-    def extract_text(self):
+    def extract_text(self) -> List[str]:
+        """Extract text from each slide as a list of strings."""
         texts = []
         for slide in self._prs.slides:
             slide_text = []
@@ -50,7 +57,8 @@ class PresentationFile(BaseFile):
             texts.append("\n".join(slide_text))
         return texts
 
-    def extract_images(self, output_dir="."):
+    def extract_images(self, output_dir: str = ".") -> List[str]:
+        """Extract all images from the presentation to a directory."""
         os.makedirs(output_dir, exist_ok=True)
         paths = []
         img_count = 0
@@ -67,7 +75,8 @@ class PresentationFile(BaseFile):
                     paths.append(filepath)
         return paths
 
-    def remove_slide(self, index):
+    def remove_slide(self, index: int) -> PresentationFile:
+        """Remove a slide by index."""
         rId = self._prs.slides._sldIdLst[index].rId
         self._prs.part.drop_rel(rId)
         del self._prs.slides._sldIdLst[index]
@@ -75,15 +84,16 @@ class PresentationFile(BaseFile):
 
     # --- Export ---
 
-    def to_pptx(self, output_path=None):
+    def to_pptx(self, output_path: Optional[str] = None) -> str:
+        """Export as PPTX."""
         output_path = self._output_path("pptx", output_path)
         self._prs.save(output_path)
         return output_path
 
-    def _libreoffice_convert(self, fmt, output_path=None):
+    def _libreoffice_convert(self, fmt: str, output_path: Optional[str] = None) -> str:
         _require_command(
             "libreoffice",
-            "Install LibreOffice for document conversion: https://www.libreoffice.org/",
+            "Install LibreOffice for presentation conversion: https://www.libreoffice.org/",
         )
         output_path = self._output_path(fmt, output_path)
         out_dir = os.path.dirname(os.path.abspath(output_path))
@@ -98,14 +108,18 @@ class PresentationFile(BaseFile):
             os.rename(generated, output_path)
         return output_path
 
-    def to_pdf(self, output_path=None):
+    def to_pdf(self, output_path: Optional[str] = None) -> str:
+        """Export as PDF (requires LibreOffice)."""
         return self._libreoffice_convert("pdf", output_path)
 
-    def to_odp(self, output_path=None):
+    def to_odp(self, output_path: Optional[str] = None) -> str:
+        """Export as ODP (requires LibreOffice)."""
         return self._libreoffice_convert("odp", output_path)
 
-    def to_ppt(self, output_path=None):
+    def to_ppt(self, output_path: Optional[str] = None) -> str:
+        """Export as PPT (requires LibreOffice)."""
         return self._libreoffice_convert("ppt", output_path)
 
-    def to_html(self, output_path=None):
+    def to_html(self, output_path: Optional[str] = None) -> str:
+        """Export as HTML (requires LibreOffice)."""
         return self._libreoffice_convert("html", output_path)

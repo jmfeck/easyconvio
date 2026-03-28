@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import os
 import shutil
 import subprocess
+from typing import Optional, Any
 
 from .base import BaseFile
 
 
-def _require_command(cmd, install_hint):
+def _require_command(cmd: str, install_hint: str) -> None:
     if shutil.which(cmd) is None:
         raise RuntimeError(f"'{cmd}' not found. {install_hint}")
 
@@ -13,18 +16,20 @@ def _require_command(cmd, install_hint):
 class VectorFile(BaseFile):
     """Vector graphics file with conversion methods."""
 
-    def _load(self):
+    def _load(self) -> None:
         self._is_svg = self.format in ("svg",)
 
     # --- Properties ---
 
     @property
-    def is_svg(self):
+    def is_svg(self) -> bool:
+        """Whether the file is an SVG."""
         return self._is_svg
 
     # --- Manipulation (SVG only) ---
 
-    def scale(self, factor):
+    def scale(self, factor: float) -> VectorFile:
+        """Scale the SVG dimensions by a factor (SVG only)."""
         if not self._is_svg:
             raise NotImplementedError("scale() is only supported for SVG files")
         with open(self.path, "r") as f:
@@ -50,19 +55,19 @@ class VectorFile(BaseFile):
 
     # --- Export via cairosvg (SVG input) ---
 
-    def _cairosvg_convert(self, method_name, output_path):
+    def _cairosvg_convert(self, method_name: str, output_path: str) -> str:
         try:
             import cairosvg
         except ImportError:
             raise ImportError(
-                "VectorFile requires cairosvg for SVG conversion. "
-                "Install with: pip install cairosvg"
+                "SVG conversion requires cairosvg. "
+                "Install with: pip install easyconvio[vectors]"
             )
         method = getattr(cairosvg, method_name)
         method(url=self.path, write_to=output_path)
         return output_path
 
-    def _inkscape_convert(self, fmt, output_path):
+    def _inkscape_convert(self, fmt: str, output_path: str) -> str:
         _require_command(
             "inkscape",
             "Install Inkscape for vector conversion: https://inkscape.org/",
@@ -76,7 +81,8 @@ class VectorFile(BaseFile):
 
     # --- Export ---
 
-    def to_svg(self, output_path=None):
+    def to_svg(self, output_path: Optional[str] = None) -> str:
+        """Export as SVG."""
         output_path = self._output_path("svg", output_path)
         if self._is_svg:
             import shutil as sh
@@ -85,7 +91,8 @@ class VectorFile(BaseFile):
             self._inkscape_convert("svg", output_path)
         return output_path
 
-    def to_png(self, output_path=None, **kwargs):
+    def to_png(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
+        """Export as PNG."""
         output_path = self._output_path("png", output_path)
         if self._is_svg:
             try:
@@ -94,7 +101,8 @@ class VectorFile(BaseFile):
                 return self._inkscape_convert("png", output_path)
         return self._inkscape_convert("png", output_path)
 
-    def to_pdf(self, output_path=None):
+    def to_pdf(self, output_path: Optional[str] = None) -> str:
+        """Export as PDF."""
         output_path = self._output_path("pdf", output_path)
         if self._is_svg:
             try:
@@ -103,7 +111,8 @@ class VectorFile(BaseFile):
                 return self._inkscape_convert("pdf", output_path)
         return self._inkscape_convert("pdf", output_path)
 
-    def to_eps(self, output_path=None):
+    def to_eps(self, output_path: Optional[str] = None) -> str:
+        """Export as EPS."""
         output_path = self._output_path("eps", output_path)
         if self._is_svg:
             try:
@@ -112,14 +121,17 @@ class VectorFile(BaseFile):
                 return self._inkscape_convert("eps", output_path)
         return self._inkscape_convert("eps", output_path)
 
-    def to_emf(self, output_path=None):
+    def to_emf(self, output_path: Optional[str] = None) -> str:
+        """Export as EMF (requires Inkscape)."""
         output_path = self._output_path("emf", output_path)
         return self._inkscape_convert("emf", output_path)
 
-    def to_wmf(self, output_path=None):
+    def to_wmf(self, output_path: Optional[str] = None) -> str:
+        """Export as WMF (requires Inkscape)."""
         output_path = self._output_path("wmf", output_path)
         return self._inkscape_convert("wmf", output_path)
 
-    def to_dxf(self, output_path=None):
+    def to_dxf(self, output_path: Optional[str] = None) -> str:
+        """Export as DXF (requires Inkscape)."""
         output_path = self._output_path("dxf", output_path)
         return self._inkscape_convert("dxf", output_path)

@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import shutil
 import tempfile
 import zipfile
 import tarfile
+from typing import Optional, List
 
 from .base import BaseFile
 
@@ -10,22 +13,24 @@ from .base import BaseFile
 class ArchiveFile(BaseFile):
     """Archive file with extraction, listing, and conversion methods."""
 
-    def _load(self):
-        self._file_list = None
+    def _load(self) -> None:
+        self._file_list: Optional[List[str]] = None
 
     # --- Properties ---
 
     @property
-    def file_list(self):
+    def file_list(self) -> List[str]:
+        """List of file names in the archive."""
         if self._file_list is None:
             self._file_list = self._get_file_list()
         return self._file_list
 
     @property
-    def file_count(self):
+    def file_count(self) -> int:
+        """Number of files in the archive."""
         return len(self.file_list)
 
-    def _get_file_list(self):
+    def _get_file_list(self) -> List[str]:
         fmt = self.format
         if fmt == "zip":
             with zipfile.ZipFile(self.path, "r") as zf:
@@ -34,21 +39,35 @@ class ArchiveFile(BaseFile):
             with tarfile.open(self.path, "r:*") as tf:
                 return tf.getnames()
         elif fmt == "7z":
-            import py7zr
+            try:
+                import py7zr
+            except ImportError:
+                raise ImportError(
+                    "7z support requires py7zr. "
+                    "Install with: pip install easyconvio[archives]"
+                )
             with py7zr.SevenZipFile(self.path, "r") as sz:
                 return sz.getnames()
         elif fmt == "rar":
-            import rarfile
+            try:
+                import rarfile
+            except ImportError:
+                raise ImportError(
+                    "RAR support requires rarfile. "
+                    "Install with: pip install easyconvio[archives]"
+                )
             with rarfile.RarFile(self.path, "r") as rf:
                 return rf.namelist()
         return []
 
     # --- Operations ---
 
-    def list_files(self):
+    def list_files(self) -> List[str]:
+        """Return a list of file names in the archive."""
         return self.file_list
 
-    def extract(self, output_dir="."):
+    def extract(self, output_dir: str = ".") -> str:
+        """Extract all files to the given directory."""
         fmt = self.format
         os.makedirs(output_dir, exist_ok=True)
         if fmt == "zip":
@@ -67,7 +86,8 @@ class ArchiveFile(BaseFile):
                 rf.extractall(output_dir)
         return output_dir
 
-    def extract_file(self, name, output_dir="."):
+    def extract_file(self, name: str, output_dir: str = ".") -> str:
+        """Extract a single file by name to the given directory."""
         fmt = self.format
         os.makedirs(output_dir, exist_ok=True)
         if fmt == "zip":
@@ -86,12 +106,12 @@ class ArchiveFile(BaseFile):
                 rf.extract(name, output_dir)
         return os.path.join(output_dir, name)
 
-    def _extract_to_temp(self):
+    def _extract_to_temp(self) -> str:
         tmp = tempfile.mkdtemp()
         self.extract(tmp)
         return tmp
 
-    def _pack_from_dir(self, source_dir, fmt, output_path):
+    def _pack_from_dir(self, source_dir: str, fmt: str, output_path: str) -> None:
         if fmt == "zip":
             with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for root, _, files in os.walk(source_dir):
@@ -136,7 +156,7 @@ class ArchiveFile(BaseFile):
                         arcname = os.path.relpath(full, source_dir)
                         sz.write(full, arcname)
 
-    def _convert_to(self, fmt, output_path=None):
+    def _convert_to(self, fmt: str, output_path: Optional[str] = None) -> str:
         output_path = self._output_path(fmt, output_path)
         tmp = self._extract_to_temp()
         try:
@@ -147,23 +167,30 @@ class ArchiveFile(BaseFile):
 
     # --- Export ---
 
-    def to_zip(self, output_path=None):
+    def to_zip(self, output_path: Optional[str] = None) -> str:
+        """Export as ZIP."""
         return self._convert_to("zip", output_path)
 
-    def to_tar(self, output_path=None):
+    def to_tar(self, output_path: Optional[str] = None) -> str:
+        """Export as TAR."""
         return self._convert_to("tar", output_path)
 
-    def to_gz(self, output_path=None):
+    def to_gz(self, output_path: Optional[str] = None) -> str:
+        """Export as gzipped TAR."""
         return self._convert_to("gz", output_path)
 
-    def to_tgz(self, output_path=None):
+    def to_tgz(self, output_path: Optional[str] = None) -> str:
+        """Export as .tgz (gzipped TAR)."""
         return self._convert_to("tgz", output_path)
 
-    def to_bz2(self, output_path=None):
+    def to_bz2(self, output_path: Optional[str] = None) -> str:
+        """Export as bzip2-compressed TAR."""
         return self._convert_to("bz2", output_path)
 
-    def to_xz(self, output_path=None):
+    def to_xz(self, output_path: Optional[str] = None) -> str:
+        """Export as xz-compressed TAR."""
         return self._convert_to("xz", output_path)
 
-    def to_7z(self, output_path=None):
+    def to_7z(self, output_path: Optional[str] = None) -> str:
+        """Export as 7z."""
         return self._convert_to("7z", output_path)
