@@ -28,12 +28,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             ffmpeg \
+            libavcodec-extra \
             pandoc \
             libreoffice \
             inkscape \
             calibre \
             unrar \
             libheif1
+          # libavcodec-extra adds non-free codecs (AMR, etc.)
           # libheif provides HEIC decode/encode for pillow-heif
 
       - name: Install runtime binaries (Windows)
