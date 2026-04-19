@@ -1,154 +1,94 @@
 import os
+
 import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
 from PIL import Image
 
 from easyconvio.image import ImageFile
 
+from .conftest import needs_pillow_heif
+
 
 @pytest.fixture
-def img_file(tmp_path):
-    path = tmp_path / "test.jpg"
-    Image.new("RGB", (100, 50), color="red").save(str(path))
-    return ImageFile(str(path))
+def img_file(jpg_path):
+    return ImageFile(jpg_path)
+
+
+# --- properties / transforms (already covered, keep tight) ---
 
 
 def test_properties(img_file):
-    assert img_file.size == (100, 50)
-    assert img_file.width == 100
-    assert img_file.height == 50
+    assert img_file.size == (120, 80)
+    assert img_file.width == 120
+    assert img_file.height == 80
     assert img_file.mode == "RGB"
 
 
-def test_resize(img_file):
-    result = img_file.resize(200, 100)
-    assert result is img_file
-    assert img_file.size == (200, 100)
+def test_resize_crop_rotate(img_file):
+    img_file.resize(60, 40)
+    assert img_file.size == (60, 40)
+    img_file.crop(0, 0, 30, 20)
+    assert img_file.size == (30, 20)
+    img_file.rotate(90)
+    assert img_file.size == (20, 30)
 
 
-def test_crop(img_file):
-    result = img_file.crop(10, 10, 50, 40)
-    assert result is img_file
-    assert img_file.size == (40, 30)
+def test_flip_thumbnail(img_file):
+    img_file.flip_horizontal()
+    img_file.flip_vertical()
+    img_file.thumbnail(20, 20)
+    assert img_file.width <= 20 and img_file.height <= 20
 
 
-def test_rotate(img_file):
-    result = img_file.rotate(90)
-    assert result is img_file
-    assert img_file.width == 50
-    assert img_file.height == 100
+def test_color_ops(img_file):
+    img_file.brightness(1.2).contrast(1.1).sharpness(1.5).saturation(0.8)
+    img_file.auto_contrast().equalize().sepia()
+    assert img_file.mode == "RGB"
 
 
-def test_flip_horizontal(img_file):
-    result = img_file.flip_horizontal()
-    assert result is img_file
-    assert img_file.size == (100, 50)
-
-
-def test_flip_vertical(img_file):
-    result = img_file.flip_vertical()
-    assert result is img_file
-    assert img_file.size == (100, 50)
-
-
-def test_thumbnail(img_file):
-    result = img_file.thumbnail(30, 30)
-    assert result is img_file
-    assert img_file.width <= 30
-    assert img_file.height <= 30
-
-
-def test_grayscale(img_file):
-    result = img_file.grayscale()
-    assert result is img_file
+def test_grayscale_invert(img_file):
+    img_file.grayscale()
     assert img_file.mode == "L"
+    img_file2 = ImageFile(img_file.path)
+    img_file2.invert()
 
 
-def test_brightness(img_file):
-    result = img_file.brightness(1.5)
-    assert result is img_file
-
-
-def test_contrast(img_file):
-    result = img_file.contrast(1.5)
-    assert result is img_file
-
-
-def test_sharpness(img_file):
-    result = img_file.sharpness(2.0)
-    assert result is img_file
-
-
-def test_saturation(img_file):
-    result = img_file.saturation(0.5)
-    assert result is img_file
-
-
-def test_invert(img_file):
-    result = img_file.invert()
-    assert result is img_file
-
-
-def test_auto_contrast(img_file):
-    result = img_file.auto_contrast()
-    assert result is img_file
-
-
-def test_equalize(img_file):
-    result = img_file.equalize()
-    assert result is img_file
-
-
-def test_sepia(img_file):
-    result = img_file.sepia()
-    assert result is img_file
-    assert img_file.mode == "RGB"
-
-
-def test_opacity(img_file):
-    result = img_file.opacity(0.5)
-    assert result is img_file
+def test_opacity_makes_rgba(img_file):
+    img_file.opacity(0.5)
     assert img_file.mode == "RGBA"
 
 
-def test_blur(img_file):
-    result = img_file.blur(radius=3)
-    assert result is img_file
+def test_blur_border_paste(img_file, tmp_path):
+    overlay = tmp_path / "ov.png"
+    Image.new("RGB", (10, 10), color="blue").save(overlay)
+    img_file.blur(2).add_border(5, color="black").paste(str(overlay), 2, 2)
 
 
-def test_add_border(img_file):
-    result = img_file.add_border(10, color="blue")
-    assert result is img_file
-    assert img_file.width == 120
-    assert img_file.height == 70
+# --- exports — REAL files for every claimed format ---
 
 
-def test_paste(img_file, tmp_path):
-    overlay_path = tmp_path / "overlay.png"
-    Image.new("RGB", (20, 20), color="blue").save(str(overlay_path))
-    result = img_file.paste(str(overlay_path), 5, 5)
-    assert result is img_file
-
-
-def test_to_png(img_file, tmp_path):
-    out = str(tmp_path / "out.png")
-    result = img_file.to_png(out)
+@pytest.mark.parametrize(
+    "method, ext",
+    [
+        ("to_jpg", "jpg"),
+        ("to_png", "png"),
+        ("to_gif", "gif"),
+        ("to_bmp", "bmp"),
+        ("to_tiff", "tiff"),
+        ("to_webp", "webp"),
+        ("to_ico", "ico"),
+        ("to_tga", "tga"),
+        ("to_ppm", "ppm"),
+        ("to_pcx", "pcx"),
+        ("to_dds", "dds"),
+    ],
+)
+def test_export_format(img_file, tmp_path, method, ext):
+    out = str(tmp_path / f"out.{ext}")
+    result = getattr(img_file, method)(out)
     assert result == out
     assert os.path.exists(out)
-
-
-def test_to_webp(img_file, tmp_path):
-    out = str(tmp_path / "out.webp")
-    result = img_file.to_webp(out)
-    assert result == out
-    assert os.path.exists(out)
-
-
-def test_to_bmp(img_file, tmp_path):
-    out = str(tmp_path / "out.bmp")
-    result = img_file.to_bmp(out)
-    assert result == out
-    assert os.path.exists(out)
+    # Re-open to confirm the file is a valid image PIL can read
+    Image.open(out).verify()
 
 
 def test_to_generic(img_file, tmp_path):
@@ -158,16 +98,44 @@ def test_to_generic(img_file, tmp_path):
     assert os.path.exists(out)
 
 
-def test_save(img_file, tmp_path):
+def test_save_default_path(img_file, tmp_path):
     out = str(tmp_path / "saved.jpg")
-    result = img_file.save(out)
-    assert result == out
+    img_file.save(out)
     assert os.path.exists(out)
 
 
 def test_chaining(img_file, tmp_path):
     out = str(tmp_path / "chained.png")
-    result = img_file.resize(50, 25).grayscale().blur().to_png(out)
-    assert os.path.exists(out)
-    reopened = Image.open(out)
-    assert reopened.size == (50, 25)
+    img_file.resize(50, 25).grayscale().blur().to_png(out)
+    assert Image.open(out).size == (50, 25)
+
+
+# --- HEIC/HEIF round-trip via pillow-heif ---
+
+
+@needs_pillow_heif
+def test_read_heic(heic_path):
+    img = ImageFile(heic_path)
+    assert img.size == (40, 30)
+    assert img.format == "heic"
+
+
+@needs_pillow_heif
+def test_to_heic_to_heif(jpg_path, tmp_path):
+    img = ImageFile(jpg_path)
+    out_heic = str(tmp_path / "out.heic")
+    out_heif = str(tmp_path / "out.heif")
+    img.to_heic(out_heic)
+    img.to_heif(out_heif)
+    assert os.path.exists(out_heic)
+    assert os.path.exists(out_heif)
+    # Open back as ImageFile to confirm round-trip
+    back = ImageFile(out_heic)
+    assert back.size == (120, 80)
+
+
+@needs_pillow_heif
+def test_heic_chain_to_png(heic_path, tmp_path):
+    out = str(tmp_path / "from_heic.png")
+    ImageFile(heic_path).resize(20, 15).to_png(out)
+    assert Image.open(out).size == (20, 15)

@@ -1,52 +1,63 @@
+import os
+
 import pytest
-from unittest.mock import patch
 
 from easyconvio.ebook import EbookFile
 
+from .conftest import needs_pandoc, needs_calibre
+
+pytestmark = needs_pandoc
+
 
 @pytest.fixture
-def ebook_file():
-    with patch.object(EbookFile, "_load"):
-        f = EbookFile("book.epub")
-    return f
+def ebook_file(epub_path):
+    return EbookFile(epub_path)
 
 
-@patch("easyconvio.ebook.pypandoc")
-def test_to_pdf(mock_pandoc, ebook_file):
-    result = ebook_file.to_pdf("out.pdf")
-    mock_pandoc.convert_file.assert_called_once_with(
-        ebook_file.path, "pdf", outputfile="out.pdf"
-    )
-    assert result == "out.pdf"
+@pytest.mark.parametrize(
+    "method, ext",
+    [
+        ("to_epub", "epub"),
+        ("to_html", "html"),
+        ("to_txt", "txt"),
+        ("to_docx", "docx"),
+        ("to_fb2", "fb2"),
+    ],
+)
+def test_export_format(ebook_file, tmp_path, method, ext):
+    out = str(tmp_path / f"out.{ext}")
+    result = getattr(ebook_file, method)(out)
+    assert result == out
+    assert os.path.exists(out)
+    assert os.path.getsize(out) > 0
 
 
-@patch("easyconvio.ebook.pypandoc")
-def test_to_html(mock_pandoc, ebook_file):
-    ebook_file.to_html("out.html")
-    mock_pandoc.convert_file.assert_called_once_with(
-        ebook_file.path, "html", outputfile="out.html"
-    )
+@needs_calibre
+def test_to_mobi(ebook_file, tmp_path):
+    out = str(tmp_path / "out.mobi")
+    ebook_file.to_mobi(out)
+    assert os.path.exists(out)
+    assert os.path.getsize(out) > 0
 
 
-@patch("easyconvio.ebook.pypandoc")
-def test_to_epub(mock_pandoc, ebook_file):
-    ebook_file.to_epub("out.epub")
-    mock_pandoc.convert_file.assert_called_once_with(
-        ebook_file.path, "epub", outputfile="out.epub"
-    )
+@needs_calibre
+def test_to_azw3(ebook_file, tmp_path):
+    out = str(tmp_path / "out.azw3")
+    ebook_file.to_azw3(out)
+    assert os.path.exists(out)
+    assert os.path.getsize(out) > 0
 
 
-@patch("easyconvio.ebook.pypandoc")
-def test_to_txt(mock_pandoc, ebook_file):
-    ebook_file.to_txt("out.txt")
-    mock_pandoc.convert_file.assert_called_once_with(
-        ebook_file.path, "plain", outputfile="out.txt"
-    )
+def test_to_pdf(ebook_file, tmp_path):
+    out = str(tmp_path / "out.pdf")
+    try:
+        ebook_file.to_pdf(out)
+    except (RuntimeError, OSError):
+        pytest.skip("No PDF engine available")
+    assert os.path.exists(out)
 
 
-@patch("easyconvio.ebook.pypandoc")
-def test_to_generic(mock_pandoc, ebook_file):
-    ebook_file.to("docx", "out.docx")
-    mock_pandoc.convert_file.assert_called_once_with(
-        ebook_file.path, "docx", outputfile="out.docx"
-    )
+def test_to_generic(ebook_file, tmp_path):
+    out = str(tmp_path / "out.html")
+    result = ebook_file.to("html", out)
+    assert os.path.exists(out)

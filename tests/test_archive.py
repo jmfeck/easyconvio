@@ -1,88 +1,96 @@
 import os
-import zipfile
 import tarfile
+import zipfile
+
 import pytest
 
 from easyconvio.archive import ArchiveFile
 
-
-@pytest.fixture
-def zip_file(tmp_path):
-    zip_path = tmp_path / "test.zip"
-    with zipfile.ZipFile(str(zip_path), "w") as zf:
-        zf.writestr("hello.txt", "hello world")
-        zf.writestr("sub/nested.txt", "nested content")
-    return ArchiveFile(str(zip_path))
+from .conftest import needs_py7zr
 
 
-@pytest.fixture
-def tar_file(tmp_path):
-    # create a file to add
-    f1 = tmp_path / "a.txt"
-    f1.write_text("aaa")
-    tar_path = tmp_path / "test.tar"
-    with tarfile.open(str(tar_path), "w") as tf:
-        tf.add(str(f1), arcname="a.txt")
-    return ArchiveFile(str(tar_path))
+# --- listing & extraction (zip) ---
 
 
-def test_zip_list_files(zip_file):
-    files = zip_file.list_files()
-    assert "hello.txt" in files
-    assert "sub/nested.txt" in files
+def test_zip_list_count(zip_path):
+    arc = ArchiveFile(zip_path)
+    files = arc.list_files()
+    assert "a.txt" in files
+    assert "b.txt" in files
+    assert any("c.txt" in f for f in files)
+    assert arc.file_count == 3
 
 
-def test_zip_file_count(zip_file):
-    assert zip_file.file_count == 2
+def test_zip_extract(zip_path, tmp_path):
+    out = str(tmp_path / "out")
+    ArchiveFile(zip_path).extract(out)
+    assert os.path.exists(os.path.join(out, "a.txt"))
+    assert os.path.exists(os.path.join(out, "sub", "c.txt"))
 
 
-def test_zip_extract(zip_file, tmp_path):
-    out_dir = str(tmp_path / "extracted")
-    zip_file.extract(out_dir)
-    assert os.path.exists(os.path.join(out_dir, "hello.txt"))
-    assert os.path.exists(os.path.join(out_dir, "sub", "nested.txt"))
-
-
-def test_zip_extract_file(zip_file, tmp_path):
-    out_dir = str(tmp_path / "single")
-    result = zip_file.extract_file("hello.txt", out_dir)
+def test_zip_extract_file(zip_path, tmp_path):
+    out = str(tmp_path / "one")
+    result = ArchiveFile(zip_path).extract_file("a.txt", out)
     assert os.path.exists(result)
-    with open(result) as f:
-        assert f.read() == "hello world"
+    assert open(result, encoding="utf-8").read() == "hello"
 
 
-def test_zip_to_tar(zip_file, tmp_path):
-    out = str(tmp_path / "converted.tar")
-    result = zip_file.to_tar(out)
+# --- listing (tar/gz) ---
+
+
+def test_tar_list(tar_path):
+    arc = ArchiveFile(tar_path)
+    assert arc.file_count == 3
+
+
+def test_gz_list(gz_path):
+    arc = ArchiveFile(gz_path)
+    assert arc.file_count == 3
+
+
+# --- write conversions: every claimed format ---
+
+
+@pytest.mark.parametrize(
+    "method, ext, opener",
+    [
+        ("to_zip", "zip", lambda p: zipfile.ZipFile(p, "r").namelist()),
+        ("to_jar", "jar", lambda p: zipfile.ZipFile(p, "r").namelist()),
+        ("to_tar", "tar", lambda p: tarfile.open(p, "r").getnames()),
+        ("to_gz", "tar.gz", lambda p: tarfile.open(p, "r:gz").getnames()),
+        ("to_tgz", "tgz", lambda p: tarfile.open(p, "r:gz").getnames()),
+        ("to_bz2", "tar.bz2", lambda p: tarfile.open(p, "r:bz2").getnames()),
+        ("to_xz", "tar.xz", lambda p: tarfile.open(p, "r:xz").getnames()),
+    ],
+)
+def test_write_format(zip_path, tmp_path, method, ext, opener):
+    arc = ArchiveFile(zip_path)
+    out = str(tmp_path / f"out.{ext}")
+    result = getattr(arc, method)(out)
     assert result == out
     assert os.path.exists(out)
-    with tarfile.open(out, "r") as tf:
-        names = tf.getnames()
-    assert "hello.txt" in names
+    names = opener(out)
+    assert any("a.txt" in n for n in names)
 
 
-def test_zip_to_gz(zip_file, tmp_path):
-    out = str(tmp_path / "converted.tar.gz")
-    result = zip_file.to_gz(out)
-    assert result == out
+@needs_py7zr
+def test_to_7z(zip_path, tmp_path):
+    import py7zr
+    arc = ArchiveFile(zip_path)
+    out = str(tmp_path / "out.7z")
+    arc.to_7z(out)
     assert os.path.exists(out)
+    with py7zr.SevenZipFile(out, "r") as sz:
+        assert any("a.txt" in n for n in sz.getnames())
 
 
-def test_tar_list_files(tar_file):
-    assert "a.txt" in tar_file.list_files()
+@needs_py7zr
+def test_read_7z(sevenz_path):
+    arc = ArchiveFile(sevenz_path)
+    assert arc.file_count == 3
 
 
-def test_tar_to_zip(tar_file, tmp_path):
-    out = str(tmp_path / "converted.zip")
-    result = tar_file.to_zip(out)
-    assert result == out
-    assert os.path.exists(out)
-    with zipfile.ZipFile(out, "r") as zf:
-        assert "a.txt" in zf.namelist()
-
-
-def test_to_generic(zip_file, tmp_path):
+def test_to_generic(zip_path, tmp_path):
     out = str(tmp_path / "generic.tar")
-    result = zip_file.to("tar", out)
-    assert result == out
+    ArchiveFile(zip_path).to("tar", out)
     assert os.path.exists(out)

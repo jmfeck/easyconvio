@@ -10,6 +10,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
 
@@ -21,13 +22,39 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install ffmpeg (Ubuntu)
+      - name: Install runtime binaries (Ubuntu)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ffmpeg \
+            pandoc \
+            libreoffice \
+            inkscape \
+            calibre \
+            unrar \
+            libheif1
+          # libheif provides HEIC decode/encode for pillow-heif
 
-      - name: Install ffmpeg (Windows)
+      - name: Install runtime binaries (Windows)
         if: runner.os == 'Windows'
-        run: choco install ffmpeg -y
+        run: |
+          choco install ffmpeg -y --no-progress
+          choco install pandoc -y --no-progress
+          choco install libreoffice-fresh -y --no-progress
+          choco install inkscape -y --no-progress
+          choco install calibre -y --no-progress
+          # GTK runtime provides libcairo-2.dll for cairosvg
+          choco install gtk-runtime -y --no-progress
+        shell: pwsh
+
+      - name: Add tools to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "C:\Program Files\LibreOffice\program" >> $env:GITHUB_PATH
+          echo "C:\Program Files\Inkscape\bin" >> $env:GITHUB_PATH
+          echo "C:\Program Files\Calibre2" >> $env:GITHUB_PATH
+        shell: pwsh
 
       - name: Install dependencies
         run: |
@@ -35,4 +62,4 @@ jobs:
           pip install -e ".[all,dev]"
 
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=short

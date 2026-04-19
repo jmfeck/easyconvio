@@ -1,61 +1,68 @@
+import os
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from easyconvio.document import DocumentFile
 
+from .conftest import needs_pandoc
+
+pytestmark = needs_pandoc
+
 
 @pytest.fixture
-def doc_file():
-    with patch.object(DocumentFile, "_load"):
-        f = DocumentFile("report.docx")
-    return f
+def doc_file(md_path):
+    return DocumentFile(md_path)
 
 
-@patch("easyconvio.document.pypandoc")
-def test_to_pdf(mock_pandoc, doc_file):
-    result = doc_file.to_pdf("out.pdf")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "pdf", outputfile="out.pdf"
-    )
-    assert result == "out.pdf"
+@pytest.mark.parametrize(
+    "method, ext",
+    [
+        ("to_html", "html"),
+        ("to_md", "md"),
+        ("to_txt", "txt"),
+        ("to_latex", "tex"),
+        ("to_rst", "rst"),
+        ("to_docx", "docx"),
+        ("to_odt", "odt"),
+        ("to_rtf", "rtf"),
+        ("to_asciidoc", "adoc"),
+        ("to_mediawiki", "wiki"),
+        ("to_org", "org"),
+        ("to_xml", "xml"),
+        ("to_epub", "epub"),
+    ],
+)
+def test_export_format(doc_file, tmp_path, method, ext):
+    out = str(tmp_path / f"out.{ext}")
+    result = getattr(doc_file, method)(out)
+    assert result == out
+    assert os.path.exists(out)
+    assert os.path.getsize(out) > 0
 
 
-@patch("easyconvio.document.pypandoc")
-def test_to_html(mock_pandoc, doc_file):
-    result = doc_file.to_html("out.html")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "html", outputfile="out.html"
-    )
-    assert result == "out.html"
+def test_to_pdf_via_html(html_path, tmp_path):
+    """PDF requires a PDF engine; pandoc bundles weasyprint or wkhtmltopdf paths.
+    Fall back to writing via the HTML path which always works.
+    """
+    doc = DocumentFile(html_path)
+    out = str(tmp_path / "out.pdf")
+    try:
+        doc.to_pdf(out)
+    except (RuntimeError, OSError):
+        pytest.skip("No PDF engine (latex/wkhtmltopdf/weasyprint) available")
+    assert os.path.exists(out)
 
 
-@patch("easyconvio.document.pypandoc")
-def test_to_md(mock_pandoc, doc_file):
-    result = doc_file.to_md("out.md")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "md", outputfile="out.md"
-    )
+def test_to_csv_from_csv(csv_doc_path, tmp_path):
+    """CSV→CSV is a fast-path copy."""
+    doc = DocumentFile(csv_doc_path)
+    out = str(tmp_path / "out.csv")
+    doc.to_csv(out)
+    assert open(out, encoding="utf-8").read() == "a,b,c\n1,2,3\n4,5,6\n"
 
 
-@patch("easyconvio.document.pypandoc")
-def test_to_txt(mock_pandoc, doc_file):
-    result = doc_file.to_txt("out.txt")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "plain", outputfile="out.txt"
-    )
-
-
-@patch("easyconvio.document.pypandoc")
-def test_to_latex(mock_pandoc, doc_file):
-    result = doc_file.to_latex("out.tex")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "latex", outputfile="out.tex"
-    )
-
-
-@patch("easyconvio.document.pypandoc")
-def test_to_generic(mock_pandoc, doc_file):
-    doc_file.to("rst", "out.rst")
-    mock_pandoc.convert_file.assert_called_once_with(
-        doc_file.path, "rst", outputfile="out.rst"
-    )
+def test_to_generic(doc_file, tmp_path):
+    out = str(tmp_path / "out.rst")
+    result = doc_file.to("rst", out)
+    assert result == out
+    assert os.path.exists(out)

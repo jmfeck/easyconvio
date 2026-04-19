@@ -8,18 +8,21 @@ from pydub.effects import normalize as pydub_normalize
 from .base import BaseFile
 
 
+# pydub passes `format` straight through to ffmpeg's `-f` (muxer) flag.
+# Some extensions don't match a muxer name and need an explicit codec too.
+# The value is either a muxer string or a (muxer, codec) tuple.
 PYDUB_FORMAT_MAP = {
     "mp3": "mp3",
     "wav": "wav",
     "ogg": "ogg",
     "flac": "flac",
-    "aac": "aac",
-    "wma": "wma",
-    "m4a": "mp4",
+    "aac": ("adts", "aac"),       # raw AAC stream
+    "wma": ("asf", "wmav2"),      # WMA is asf-container with wmav2 codec
+    "m4a": ("ipod", "aac"),       # m4a needs ipod muxer for proper container
     "aiff": "aiff",
     "ac3": "ac3",
-    "opus": "opus",
-    "amr": "amr",
+    "opus": ("opus", "libopus"),
+    "amr": ("amr", "libopencore_amrnb"),  # requires ffmpeg built with opencore
     "au": "au",
 }
 
@@ -150,8 +153,18 @@ class AudioFile(BaseFile):
 
     def _export_as(self, fmt: str, output_path: Optional[str] = None, **kwargs: Any) -> str:
         output_path = self._output_path(fmt, output_path)
-        pydub_fmt = PYDUB_FORMAT_MAP.get(fmt, fmt)
-        self._audio.export(output_path, format=pydub_fmt, **kwargs)
+        spec = PYDUB_FORMAT_MAP.get(fmt, fmt)
+        # AMR requires narrowband: 8 kHz mono. Coerce in a temp segment so we
+        # don't mutate the user's AudioFile.
+        audio = self._audio
+        if fmt == "amr":
+            audio = audio.set_frame_rate(8000).set_channels(1)
+        if isinstance(spec, tuple):
+            muxer, codec = spec
+            kwargs.setdefault("codec", codec)
+            audio.export(output_path, format=muxer, **kwargs)
+        else:
+            audio.export(output_path, format=spec, **kwargs)
         return output_path
 
     def to_mp3(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
