@@ -4,7 +4,7 @@ import pytest
 
 from easyconvio.audio import AudioFile
 
-from .conftest import needs_ffmpeg
+from .conftest import needs_ffmpeg, needs_amr_encoder
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def test_speed(audio_file):
         pytest.param("to_aiff", "aiff", marks=needs_ffmpeg),
         pytest.param("to_ac3", "ac3", marks=needs_ffmpeg),
         pytest.param("to_opus", "opus", marks=needs_ffmpeg),
-        pytest.param("to_amr", "amr", marks=needs_ffmpeg),
+        pytest.param("to_amr", "amr", marks=[needs_ffmpeg, needs_amr_encoder]),
         pytest.param("to_au", "au", marks=needs_ffmpeg),
         pytest.param("to_wma", "wma", marks=needs_ffmpeg),
     ],

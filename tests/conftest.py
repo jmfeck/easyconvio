@@ -35,10 +35,32 @@ def _have_module(name: str) -> bool:
         return False
 
 
+def _ffmpeg_has_encoder(encoder: str) -> bool:
+    """True if the local ffmpeg ships the named encoder.
+
+    Some Linux distros build ffmpeg without non-free codecs (e.g. opencore-amr).
+    """
+    if not _have("ffmpeg"):
+        return False
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-encoders"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return False
+    return encoder in out.stdout
+
+
 # --- markers ---
 
 
 needs_ffmpeg = pytest.mark.skipif(not _have("ffmpeg"), reason="ffmpeg not installed")
+needs_amr_encoder = pytest.mark.skipif(
+    not _ffmpeg_has_encoder("libopencore_amrnb"),
+    reason="ffmpeg built without libopencore_amrnb (AMR encoder)",
+)
 needs_pandoc = pytest.mark.skipif(not _have("pandoc"), reason="pandoc not installed")
 needs_libreoffice = pytest.mark.skipif(
     not _have("libreoffice") and not _have("soffice"),
