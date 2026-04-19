@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "easyconvio"
-version = "0.3.0"
+version = "1.0.0"
 description = "Simple file conversion and transformation for Python"
 readme = "README.md"
 authors = [{ name = "Joao Feck", email = "joaomfeck@gmail.com" }]
@@ -32,13 +32,19 @@ Repository = "https://github.com/jmfeck/easyconvio"
 Issues = "https://github.com/jmfeck/easyconvio/issues"
 
 [project.optional-dependencies]
+images = ["pillow-heif"]
 presentations = ["python-pptx"]
+spreadsheets = ["openpyxl", "odfpy", "xlrd"]
 vectors = ["cairosvg"]
 fonts = ["fonttools", "brotli"]
 archives = ["py7zr", "rarfile"]
 cad = ["ezdxf", "matplotlib"]
 all = [
+    "pillow-heif",
     "python-pptx",
+    "openpyxl",
+    "odfpy",
+    "xlrd",
     "cairosvg",
     "fonttools",
     "brotli",
@@ -47,7 +53,7 @@ all = [
     "ezdxf",
     "matplotlib",
 ]
-dev = ["pytest"]
+dev = ["pytest", "pytest-cov"]
 
 [tool.setuptools.packages.find]
 include = ["easyconvio*"]

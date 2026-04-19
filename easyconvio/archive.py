@@ -32,7 +32,7 @@ class ArchiveFile(BaseFile):
 
     def _get_file_list(self) -> List[str]:
         fmt = self.format
-        if fmt == "zip":
+        if fmt in ("zip", "jar"):
             with zipfile.ZipFile(self.path, "r") as zf:
                 return zf.namelist()
         elif fmt in ("tar", "gz", "tgz", "bz2", "tbz2", "xz"):
@@ -70,7 +70,7 @@ class ArchiveFile(BaseFile):
         """Extract all files to the given directory."""
         fmt = self.format
         os.makedirs(output_dir, exist_ok=True)
-        if fmt == "zip":
+        if fmt in ("zip", "jar"):
             with zipfile.ZipFile(self.path, "r") as zf:
                 zf.extractall(output_dir)
         elif fmt in ("tar", "gz", "tgz", "bz2", "tbz2", "xz"):
@@ -90,7 +90,7 @@ class ArchiveFile(BaseFile):
         """Extract a single file by name to the given directory."""
         fmt = self.format
         os.makedirs(output_dir, exist_ok=True)
-        if fmt == "zip":
+        if fmt in ("zip", "jar"):
             with zipfile.ZipFile(self.path, "r") as zf:
                 zf.extract(name, output_dir)
         elif fmt in ("tar", "gz", "tgz", "bz2", "tbz2", "xz"):
@@ -112,7 +112,7 @@ class ArchiveFile(BaseFile):
         return tmp
 
     def _pack_from_dir(self, source_dir: str, fmt: str, output_path: str) -> None:
-        if fmt == "zip":
+        if fmt in ("zip", "jar"):
             with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for root, _, files in os.walk(source_dir):
                     for f in files:
@@ -170,6 +170,10 @@ class ArchiveFile(BaseFile):
     def to_zip(self, output_path: Optional[str] = None) -> str:
         """Export as ZIP."""
         return self._convert_to("zip", output_path)
+
+    def to_jar(self, output_path: Optional[str] = None) -> str:
+        """Export as JAR (zip-format Java archive)."""
+        return self._convert_to("jar", output_path)
 
     def to_tar(self, output_path: Optional[str] = None) -> str:
         """Export as TAR."""

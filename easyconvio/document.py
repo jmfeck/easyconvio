@@ -77,3 +77,16 @@ class DocumentFile(BaseFile):
     def to_epub(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
         """Export as EPUB."""
         return self._convert_to("epub", output_path, **kwargs)
+
+    def to_csv(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
+        """Export as CSV. Only meaningful for tabular sources (e.g. CSV→CSV copy, or HTML tables).
+
+        For arbitrary documents this falls back to pandoc's CSV writer, which extracts
+        the first table found. For multi-sheet/tabular data, use the Spreadsheet API.
+        """
+        if self.format == "csv":
+            output_path = self._output_path("csv", output_path)
+            import shutil as sh
+            sh.copy2(self.path, output_path)
+            return output_path
+        return self._convert_to("csv", output_path, **kwargs)

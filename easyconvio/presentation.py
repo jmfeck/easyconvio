@@ -13,18 +13,58 @@ def _require_command(cmd: str, install_hint: str) -> None:
         raise RuntimeError(f"'{cmd}' not found. {install_hint}")
 
 
+def _libreoffice_binary() -> str:
+    """Return the LibreOffice CLI name, preferring 'libreoffice' over 'soffice'.
+
+    Windows installs ship `soffice.exe` instead of `libreoffice`.
+    """
+    for name in ("libreoffice", "soffice"):
+        if shutil.which(name):
+            return name
+    raise RuntimeError(
+        "LibreOffice not found. Install LibreOffice: https://www.libreoffice.org/"
+    )
+
+
 class PresentationFile(BaseFile):
     """Presentation file with manipulation and conversion methods."""
 
     def _load(self) -> None:
         try:
             from pptx import Presentation
-            self._prs = Presentation(self.path)
         except ImportError:
             raise ImportError(
                 "PresentationFile requires python-pptx. "
                 "Install with: pip install easyconvio[presentations]"
             )
+        self._tmp_pptx: Optional[str] = None
+        # python-pptx natively reads pptx and ppsx (same OOXML container)
+        if self.format in ("pptx", "ppsx"):
+            self._prs = Presentation(self.path)
+        else:
+            # ppt, pps, odp — convert to pptx via LibreOffice first
+            self._tmp_pptx = self._libreoffice_to_pptx()
+            self._prs = Presentation(self._tmp_pptx)
+
+    def _libreoffice_to_pptx(self) -> str:
+        import tempfile
+        binary = _libreoffice_binary()
+        out_dir = tempfile.mkdtemp()
+        subprocess.run(
+            [binary, "--headless", "--convert-to", "pptx",
+             "--outdir", out_dir, self.path],
+            check=True,
+            capture_output=True,
+        )
+        base = os.path.splitext(os.path.basename(self.path))[0]
+        return os.path.join(out_dir, f"{base}.pptx")
+
+    def close(self) -> None:
+        if self._tmp_pptx and os.path.exists(self._tmp_pptx):
+            try:
+                shutil.rmtree(os.path.dirname(self._tmp_pptx))
+            except OSError:
+                pass
 
     # --- Properties ---
 
@@ -91,14 +131,11 @@ class PresentationFile(BaseFile):
         return output_path
 
     def _libreoffice_convert(self, fmt: str, output_path: Optional[str] = None) -> str:
-        _require_command(
-            "libreoffice",
-            "Install LibreOffice for presentation conversion: https://www.libreoffice.org/",
-        )
+        binary = _libreoffice_binary()
         output_path = self._output_path(fmt, output_path)
         out_dir = os.path.dirname(os.path.abspath(output_path))
         subprocess.run(
-            ["libreoffice", "--headless", "--convert-to", fmt, "--outdir", out_dir, self.path],
+            [binary, "--headless", "--convert-to", fmt, "--outdir", out_dir, self.path],
             check=True,
             capture_output=True,
         )
@@ -123,3 +160,14 @@ class PresentationFile(BaseFile):
     def to_html(self, output_path: Optional[str] = None) -> str:
         """Export as HTML (requires LibreOffice)."""
         return self._libreoffice_convert("html", output_path)
+
+    def to_pps(self, output_path: Optional[str] = None) -> str:
+        """Export as PPS (legacy PowerPoint Show, requires LibreOffice)."""
+        return self._libreoffice_convert("pps", output_path)
+
+    def to_ppsx(self, output_path: Optional[str] = None) -> str:
+        """Export as PPSX (PowerPoint Show, OOXML)."""
+        # PPSX is the same container as PPTX — just save with the .ppsx extension.
+        output_path = self._output_path("ppsx", output_path)
+        self._prs.save(output_path)
+        return output_path

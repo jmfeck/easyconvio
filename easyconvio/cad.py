@@ -45,9 +45,7 @@ class CADFile(BaseFile):
         self._doc.saveas(output_path)
         return output_path
 
-    def to_png(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
-        """Export as PNG (requires matplotlib)."""
-        output_path = self._output_path("png", output_path)
+    def _render(self, output_path: str, dpi: int = 300) -> str:
         try:
             from ezdxf.addons.drawing import matplotlib as draw_mpl
         except ImportError:
@@ -55,40 +53,19 @@ class CADFile(BaseFile):
                 "CAD rendering requires matplotlib. "
                 "Install with: pip install easyconvio[cad]"
             )
-        fig = draw_mpl.qfigure(self._doc.modelspace())
-        fig.savefig(output_path, dpi=kwargs.get("dpi", 300))
-        import matplotlib.pyplot as plt
-        plt.close(fig)
+        # qsave uses the file extension to choose the backend format
+        # (png, svg, pdf are all supported by matplotlib).
+        draw_mpl.qsave(self._doc.modelspace(), output_path, dpi=dpi)
         return output_path
+
+    def to_png(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
+        """Export as PNG (requires matplotlib)."""
+        return self._render(self._output_path("png", output_path), dpi=kwargs.get("dpi", 300))
 
     def to_svg(self, output_path: Optional[str] = None) -> str:
         """Export as SVG (requires matplotlib)."""
-        output_path = self._output_path("svg", output_path)
-        try:
-            from ezdxf.addons.drawing import matplotlib as draw_mpl
-        except ImportError:
-            raise ImportError(
-                "CAD rendering requires matplotlib. "
-                "Install with: pip install easyconvio[cad]"
-            )
-        fig = draw_mpl.qfigure(self._doc.modelspace())
-        fig.savefig(output_path, format="svg")
-        import matplotlib.pyplot as plt
-        plt.close(fig)
-        return output_path
+        return self._render(self._output_path("svg", output_path))
 
     def to_pdf(self, output_path: Optional[str] = None) -> str:
         """Export as PDF (requires matplotlib)."""
-        output_path = self._output_path("pdf", output_path)
-        try:
-            from ezdxf.addons.drawing import matplotlib as draw_mpl
-        except ImportError:
-            raise ImportError(
-                "CAD rendering requires matplotlib. "
-                "Install with: pip install easyconvio[cad]"
-            )
-        fig = draw_mpl.qfigure(self._doc.modelspace())
-        fig.savefig(output_path, format="pdf")
-        import matplotlib.pyplot as plt
-        plt.close(fig)
-        return output_path
+        return self._render(self._output_path("pdf", output_path))

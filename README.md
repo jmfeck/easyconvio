@@ -19,7 +19,9 @@ With optional extras:
 
 ```bash
 pip install easyconvio[all]            # everything
+pip install easyconvio[images]         # HEIC/HEIF support via pillow-heif
 pip install easyconvio[presentations]  # PowerPoint support
+pip install easyconvio[spreadsheets]   # XLSX/XLS/ODS/CSV support
 pip install easyconvio[vectors]        # SVG conversion via cairosvg
 pip install easyconvio[fonts]          # font conversion via fonttools
 pip install easyconvio[archives]       # 7z and RAR support
@@ -204,7 +206,32 @@ pres = pres.remove_slide(0)
 
 pres.to_pdf("slides.pdf")
 pres.to_pptx("slides_copy.pptx")
+pres.to_ppsx("slides.ppsx")        # PowerPoint Show
 pres.to("odp", "slides.odp")
+```
+
+### Spreadsheets
+
+```python
+sheet = ec.read_xlsx("data.xlsx")
+print(sheet.sheet_names)   # ['Sheet1', 'Summary', ...]
+print(sheet.sheet_count)   # 3
+print(sheet.row_count())   # rows in first sheet
+
+# Access rows of a specific sheet
+for row in sheet.iter_rows("Summary"):
+    print(row)
+
+# Manipulate sheets
+sheet = sheet.add_sheet("Extra", [["a", "b", "c"], [1, 2, 3]])
+sheet = sheet.rename_sheet("Sheet1", "Raw")
+sheet = sheet.remove_sheet("Extra")
+
+# Convert
+sheet.to_csv("data.csv")          # writes first sheet
+sheet.to_xlsx("data_copy.xlsx")   # preserves all sheets
+sheet.to_ods("data.ods")
+sheet.to("tsv", "data.tsv")
 ```
 
 ### Vectors
@@ -248,18 +275,33 @@ cad.to_pdf("drawing.pdf")
 
 ## Supported Formats
 
-| Category      | Formats                                                              |
-|---------------|----------------------------------------------------------------------|
-| Images        | jpg, png, gif, bmp, tiff, webp, ico, tga, ppm, pcx, dds, heic, heif |
-| Audio         | mp3, wav, ogg, flac, aac, wma, m4a, aiff, ac3, opus, amr, au        |
-| Video         | mp4, avi, mov, mkv, webm, flv, ogv, wmv, 3gp, ts, mpeg, mpg        |
-| Documents     | pdf, docx, doc, odt, rtf, txt, html, md, latex, csv                  |
-| Ebooks        | epub, mobi, azw3, fb2, lrf, pdb, snb                                |
-| Archives      | zip, tar, gz, tgz, bz2, xz, 7z, rar                                |
-| Presentations | pptx, ppt, odp                                                      |
-| Vectors       | svg, eps, ai, wmf, emf, cdr                                         |
-| Fonts         | ttf, otf, woff, woff2                                                |
-| CAD           | dxf                                                                  |
+| Category      | Read                                                                       | Write                                                              |
+|---------------|----------------------------------------------------------------------------|--------------------------------------------------------------------|
+| Images        | jpg, png, gif, bmp, tiff, webp, ico, tga, ppm, pcx, dds, heic, heif        | jpg, png, gif, bmp, tiff, webp, ico, tga, ppm, pcx, dds, heic, heif |
+| Audio         | mp3, wav, ogg, flac, aac, wma, m4a, aiff, ac3, opus, amr, au               | mp3, wav, ogg, flac, aac, wma, m4a, aiff, ac3, opus, amr, au       |
+| Video         | mp4, avi, mov, mkv, webm, flv, ogv, wmv, 3gp, ts, mpeg, mpg                | mp4, avi, mov, mkv, webm, flv, ogv, wmv, 3gp, ts, mpeg, mpg        |
+| Documents     | pdf, docx, doc, odt, rtf, txt, html, md, latex, csv                        | pdf, docx, odt, rtf, txt, html, md, latex, rst, csv, epub          |
+| Ebooks        | epub, mobi, azw3, fb2                                                      | epub, mobi, azw3, fb2, pdf, html, txt, docx                        |
+| Spreadsheets  | xlsx, xls, ods, csv, tsv                                                   | xlsx, ods, csv, tsv                                                |
+| Archives      | zip, jar, tar, gz, tgz, bz2, xz, 7z, rar                                   | zip, jar, tar, gz, tgz, bz2, xz, 7z                                |
+| Presentations | pptx, ppt, odp, pps, ppsx                                                  | pptx, ppt, odp, pps, ppsx, pdf, html                               |
+| Vectors       | svg, eps, wmf, emf                                                         | svg, png, pdf, eps, emf, wmf                                       |
+| Fonts         | ttf, otf, woff, woff2                                                      | ttf, otf, woff, woff2                                              |
+| CAD           | dxf                                                                        | dxf, png, svg, pdf                                                 |
+
+> RAR can be read and extracted, but cannot be written (no Python writer exists). Conversions from RAR target other archive formats. Proprietary formats (AI, CDR) and dead ebook formats (LRF, PDB, SNB) are intentionally not supported.
+
+## Runtime Dependencies
+
+Some conversions shell out to external tools. Install them on the host:
+
+| Tool        | Used for                                                              | Install (Ubuntu)               |
+|-------------|-----------------------------------------------------------------------|--------------------------------|
+| ffmpeg      | All audio and video conversions                                       | `apt-get install ffmpeg`       |
+| pandoc      | All document and ebook conversions                                    | `apt-get install pandoc`       |
+| LibreOffice | Presentation conversions (pptx ↔ pdf/odp/ppt) and legacy spreadsheets | `apt-get install libreoffice`  |
+| Inkscape    | Vector conversions for non-SVG formats and EMF/WMF/DXF output         | `apt-get install inkscape`     |
+| Calibre     | MOBI/AZW3 ebook conversions                                           | `apt-get install calibre`      |
 
 ## License
 

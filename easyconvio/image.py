@@ -7,6 +7,25 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from .base import BaseFile
 
 
+_HEIF_REGISTERED = False
+
+
+def _ensure_heif_support() -> None:
+    """Register pillow-heif as a PIL plugin so Image.open accepts HEIC/HEIF."""
+    global _HEIF_REGISTERED
+    if _HEIF_REGISTERED:
+        return
+    try:
+        from pillow_heif import register_heif_opener
+    except ImportError:
+        raise ImportError(
+            "HEIC/HEIF support requires pillow-heif. "
+            "Install with: pip install easyconvio[images]"
+        )
+    register_heif_opener()
+    _HEIF_REGISTERED = True
+
+
 PIL_FORMAT_MAP = {
     "jpg": "JPEG",
     "jpeg": "JPEG",
@@ -23,6 +42,8 @@ PIL_FORMAT_MAP = {
     "tga": "TGA",
     "pcx": "PCX",
     "dds": "DDS",
+    "heic": "HEIF",
+    "heif": "HEIF",
 }
 
 
@@ -30,6 +51,8 @@ class ImageFile(BaseFile):
     """Image file with conversion and manipulation methods."""
 
     def _load(self) -> None:
+        if self.format in ("heic", "heif"):
+            _ensure_heif_support()
         self._img = Image.open(self.path)
 
     # --- Properties ---
@@ -169,11 +192,20 @@ class ImageFile(BaseFile):
 
     # --- Export ---
 
-    def _save_as(self, pil_format: str, output_path: Optional[str] = None, **kwargs: Any) -> str:
-        ext = pil_format.lower()
-        if ext == "jpeg":
-            ext = "jpg"
+    def _save_as(
+        self,
+        pil_format: str,
+        output_path: Optional[str] = None,
+        ext: Optional[str] = None,
+        **kwargs: Any,
+    ) -> str:
+        if ext is None:
+            ext = pil_format.lower()
+            if ext == "jpeg":
+                ext = "jpg"
         output_path = self._output_path(ext, output_path)
+        if pil_format == "HEIF":
+            _ensure_heif_support()
         img = self._img.convert("RGB") if pil_format in ("JPEG", "BMP") else self._img
         img.save(output_path, pil_format, **kwargs)
         return output_path
@@ -221,6 +253,14 @@ class ImageFile(BaseFile):
     def to_dds(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
         """Export as DDS."""
         return self._save_as("DDS", output_path, **kwargs)
+
+    def to_heic(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
+        """Export as HEIC. Requires pillow-heif (pip install easyconvio[images])."""
+        return self._save_as("HEIF", output_path, ext="heic", **kwargs)
+
+    def to_heif(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
+        """Export as HEIF. Requires pillow-heif (pip install easyconvio[images])."""
+        return self._save_as("HEIF", output_path, ext="heif", **kwargs)
 
     def save(self, output_path: Optional[str] = None, **kwargs: Any) -> str:
         """Save in the original format."""

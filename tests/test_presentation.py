@@ -1,57 +1,87 @@
+import os
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from easyconvio.presentation import PresentationFile
 
+from .conftest import needs_python_pptx, needs_libreoffice
+
+pytestmark = needs_python_pptx
+
 
 @pytest.fixture
-def pres_file():
-    mock_prs = MagicMock()
-    mock_prs.slides = [MagicMock(), MagicMock()]
-    mock_prs.slide_width = 9144000
-    mock_prs.slide_height = 6858000
-
-    with patch("easyconvio.presentation.PresentationFile._load") as mock_load:
-        f = PresentationFile("slides.pptx")
-        f._prs = mock_prs
-    return f
+def pres_file(pptx_path):
+    return PresentationFile(pptx_path)
 
 
 def test_slide_count(pres_file):
     assert pres_file.slide_count == 2
 
 
-def test_slide_width(pres_file):
-    assert pres_file.slide_width == 9144000
-
-
-def test_slide_height(pres_file):
-    assert pres_file.slide_height == 6858000
+def test_slide_dimensions(pres_file):
+    assert pres_file.slide_width > 0
+    assert pres_file.slide_height > 0
 
 
 def test_extract_text(pres_file):
-    shape = MagicMock()
-    shape.has_text_frame = True
-    paragraph = MagicMock()
-    paragraph.text = "Hello"
-    shape.text_frame.paragraphs = [paragraph]
-
-    pres_file._prs.slides = [MagicMock()]
-    pres_file._prs.slides[0].shapes = [shape]
-
     texts = pres_file.extract_text()
-    assert texts == ["Hello"]
+    assert len(texts) == 2
+    assert "Slide 1" in texts[0]
+
+
+def test_extract_images_empty(pres_file, tmp_path):
+    """Our fixture has no images — extraction returns empty list, not crash."""
+    paths = pres_file.extract_images(str(tmp_path / "imgs"))
+    assert paths == []
+
+
+def test_remove_slide(pres_file, tmp_path):
+    pres_file.remove_slide(0)
+    assert pres_file.slide_count == 1
 
 
 def test_to_pptx(pres_file, tmp_path):
     out = str(tmp_path / "out.pptx")
-    result = pres_file.to_pptx(out)
+    pres_file.to_pptx(out)
+    assert os.path.exists(out)
+    PresentationFile(out)  # round-trip
+
+
+def test_to_ppsx(pres_file, tmp_path):
+    out = str(tmp_path / "out.ppsx")
+    pres_file.to_ppsx(out)
+    assert os.path.exists(out)
+    # PPSX uses the same container as PPTX, so we can re-open it
+    PresentationFile(out)
+
+
+# --- LibreOffice-driven conversions ---
+
+
+@needs_libreoffice
+@pytest.mark.parametrize(
+    "method, ext",
+    [
+        ("to_pdf", "pdf"),
+        ("to_odp", "odp"),
+        ("to_ppt", "ppt"),
+        ("to_html", "html"),
+        ("to_pps", "pps"),
+    ],
+)
+def test_libreoffice_export(pres_file, tmp_path, method, ext):
+    out = str(tmp_path / f"out.{ext}")
+    result = getattr(pres_file, method)(out)
     assert result == out
-    pres_file._prs.save.assert_called_once_with(out)
+    assert os.path.exists(out)
+    assert os.path.getsize(out) > 0
 
 
-def test_import_error():
-    with patch.dict("sys.modules", {"pptx": None}):
-        with patch("builtins.__import__", side_effect=ImportError):
-            with pytest.raises(ImportError, match="python-pptx"):
-                PresentationFile("slides.pptx")
+@needs_libreoffice
+def test_read_odp_via_libreoffice(pres_file, tmp_path):
+    """Convert pptx → odp, then read it back through PresentationFile."""
+    odp = str(tmp_path / "via.odp")
+    pres_file.to_odp(odp)
+    odp_pres = PresentationFile(odp)
+    assert odp_pres.slide_count >= 1
+    odp_pres.close()
